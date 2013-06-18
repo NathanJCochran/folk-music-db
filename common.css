@@ -1,0 +1,19 @@
+/* Forms: */
+
+label {display: block; float:left; text-align:right; clear:both; width:120px; } 
+
+input {float:left; width:160px }
+
+select {float:left; width:165px}
+
+input[type="submit"] {width:auto}
+
+textarea {float:left; overflow:auto; } 
+
+form {clear:none; display:inline; vertical-align:top}
+
+.col1, .col2, .col3 {float:left; width:320px; clear:none; display:inline; vertical-align:top}
+
+.row{width:100%; clear:both}
+
+fieldset {clear:none; display:inline}
