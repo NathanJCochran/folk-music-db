@@ -22,18 +22,27 @@
                $types .= $type;
           }   
           return $types;
+	}
+   
+	function featherIn($val, $array) {
+		$count = count($array);
+		for($i=0; $i<$count; $i++) {
+			$newArray[] = $val;
+			$newArray[] = $array[$i];
+		}
+		return $newArray;
+	}
+
+     function prepareStmt($mysqli, $sql) {
+          if(!($stmt = $mysqli->prepare($sql))) {
+               echo "<p>Prepare failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
+          }   
+          return $stmt;
      }   
 
      function bindNumParams($stmt, $types, $params) {
           if(!(call_user_func_array(array($stmt, 'bind_param'), array_merge(array($types), arrayRefVals($params))))) {
                echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }   
-          return $stmt;
-     }   
-
-     function prepareStmt($mysqli, $sql) {
-          if(!($stmt = $mysqli->prepare($sql))) {
-               echo "<p>Prepare failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
           }   
           return $stmt;
      }   

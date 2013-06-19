@@ -9,24 +9,11 @@
 	 *		$type: the name of the type of instrument
 	 */
 	function insert_instrument($mysqli, $type) {
-
-		//Prepare insert statement:
-          if(!($stmt = $mysqli->prepare("INSERT INTO instrument (type) VALUES (?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }   
-    
-          //Bind variables:
-          if(!($stmt->bind_param("s", $type))) {
-               echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }   
-    
-          //Execute statement:
-          if(!($stmt->execute())) {
-               echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }   
-          else {
-               echo "<p>Added " . $stmt->affected_rows . " row(s) to instrument.</p>";
-		}
+		$sql="INSERT INTO instrument (type)
+				VALUES (?);";
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = bindNumParams($stmt, 's', array($type));
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -41,27 +28,14 @@
 	 *		$born: year born
 	 *		$died: year died
 	 *		$hometown: musician's home town
-	 *		$homestate: musician's home state
+	 *		$homestate: musician's home state (foreign key for state(id))
 	 */
 	function insert_musician($mysqli, $stage_name, $first_name, $middle_name, $last_name, $born, $died, $hometown, $homestate) {
-
-		//Prepare insert statement:
-          if(!($stmt = $mysqli->prepare("INSERT INTO musician (stage_name, first_name, middle_name, last_name, born, died, hometown, homestate) VALUES (?, ?, ?, ?, ?, ?, ?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }   
-    
-          //Bind variables:
-          if(!($stmt->bind_param("ssssiisi", $stage_name, $first_name, $middle_name, $last_name, $born, $died, $hometown, $homestate))) {
-               echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }   
-    
-          //Execute statement:
-          if(!($stmt->execute())) {
-               echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }   
-          else {
-               echo "<p>Added " . $stmt->affected_rows . " row(s) to musician.</p>";
-		}
+		$sql="INSERT INTO musician (stage_name, first_name, middle_name, last_name, born, died, hometown, homestate)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = bindNumParams($stmt, "ssssiisi", array($stage_name, $first_name, $middle_name, $last_name, $born, $died, $hometown, $homestate));
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -74,44 +48,31 @@
 	 * 		$song_id: array of ids for the instruments played
 	 */
 	function insert_musician_instrument($mysqli, $musician_id, $instrument_ids) {
-
-		if(!($stmt = $mysqli->prepare("INSERT INTO musician_instrument (musician_id, instrument_id) VALUES (?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }   
-		
-		$count=0;
-          foreach ($instrument_ids as $instrument_id) {
-			$count++;
-
-               //Bind variables:
-               if(!($stmt->bind_param("ii", $musician_id, $instrument_id))) {
-                    echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-
-               if(!($stmt->execute())) {
-                    echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-  		}
-		echo "<p>Added " . $count . " row(s) to musician_instrument.</p>";    
+		$sql="INSERT INTO musician_instrument (musician_id, instrument_id)
+				VALUES (?, ?)";
+		$sql .= numSqlLines((count($instrument_ids)-1), ", (?, ?)");
+		$sql .= ";";
+		$types = numType(count($instrument_ids), "ii");
+		$params = featherIn($musician_id, $instrument_ids);
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = bindNumParams($stmt, $types, $params);
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
 
+	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  
+	 * Inserts a single row into the record_label table
+	 * Param: $mysqli: mysqli object for the folk_music database
+	 *		$name: name of the record label
+	 * 		$year_founded: year the record label was founded
+	 */
 	function insert_record_label($mysqli, $name, $year_founded) {
-		$sql = "INSERT INTO record_label (name, year_founded) VALUES (?, ?);";
+		$sql="INSERT INTO record_label (name, year_founded)
+				VALUES (?, ?);";
 		$stmt = prepareStmt($mysqli, $sql);
-
-		if(!($stmt->bind_param("si", $name, $year_founded))) {
-               echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-		}
-
-          //Execute statement:
-          if(!($stmt->execute())) {
-               echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }
-          else {
-               echo "<p>Added " . $stmt->affected_rows . " row(s) to record_label.</p>";    
-          }
+		$stmt = bindNumParams($stmt, "si", array($name, $year_founded));
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -124,23 +85,11 @@
 	 *		$record_label: record label that produced the album
 	 */
 	function insert_album($mysqli, $title, $year, $record_label) {
-
-		if(!($stmt = $mysqli->prepare("INSERT INTO album (title, year, record_label) VALUES (?, ?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }
-          
-          //Bind variables:
-          if(!($stmt->bind_param("sii", $title, $year, $record_label))) {
-               echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }
-          
-          //Execute statement:
-          if(!($stmt->execute())) {
-               echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }
-          else {
-               echo "<p>Added " . $stmt->affected_rows . " row(s) to album.</p>";    
-          }
+		$sql = "INSERT INTO album (title, year, record_label)
+				VALUES (?, ?, ?);";
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = bindNumParams($stmt, "sii", array($title, $year, $record_label));          
+		$stmt = executeStmt($stmt);          
 		$stmt->close();
 	}
 
@@ -153,25 +102,15 @@
 	 * 		$album_id: id for the album in question
 	 */
 	function insert_musician_album($mysqli, $musician_ids, $album_id) {
-		
-		if(!($stmt = $mysqli->prepare("INSERT INTO musician_album (musician_id, album_id) VALUES (?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }   
-		
-		$count=0;
-          foreach ($musician_ids as $musician_id) {
-			$count++;
-
-               //Bind variables:
-               if(!($stmt->bind_param("ii", $musician_id, $album_id))) {
-                    echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-
-               if(!($stmt->execute())) {
-                    echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-  		}
-		echo "<p>Added " . $count . " row(s) to musician_album.</p>";    
+		$sql="INSERT INTO musician_album (album_id, musician_id)
+				VALUES (?, ?)";
+		$sql .= numSqlLines((count($musician_ids)-1), ", (?, ?)");
+		$sql .= ";";
+		$types = numType(count($musician_ids), "ii");
+		$params = featherIn($album_id, $musician_ids);
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt - bindNumParams($stmt, $types, $params);
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -183,23 +122,11 @@
 	 * 		$year_written: year the song was written
 	 */
 	function insert_song($mysqli, $title, $year_written) {
-	
-		if(!($stmt = $mysqli->prepare("INSERT INTO song (title, year_written) VALUES (?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }
-          
-          //Bind variables:
-          if(!($stmt->bind_param("si", $title, $year_written))) {
-               echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }
-          
-          //Execute statement:
-          if(!($stmt->execute())) {
-               echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }
-          else {
-               echo "<p>Added " . $stmt->affected_rows . " row(s) to song.</p>";    
-          }
+		$sql="INSERT INTO song (title, year_written)
+				VALUES (?, ?);";
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = bindNumParams($stmt, "si", array($title, $year_written));
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -212,25 +139,15 @@
 	 * 		$song_id: id for the song in question
 	 */
 	function insert_musician_song($mysqli, $musician_ids, $song_id) {
-		
-		if(!($stmt = $mysqli->prepare("INSERT INTO musician_song (musician_id, song_id) VALUES (?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }   
-		
-		$count=0;
-          foreach ($musician_ids as $musician_id) {
-			$count++;
-
-               //Bind variables:
-               if(!($stmt->bind_param("ii", $musician_id, $song_id))) {
-                    echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-
-               if(!($stmt->execute())) {
-                    echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-  		}
-		echo "<p>Added " . $count . " row(s) to musician_song.</p>";    
+		$sql="INSERT INTO musician_song (song_id, musician_id)
+				VALUES (?, ?)";
+		$sql .= numSqlLines((count($musician_ids)-1), ", (?, ?)");
+		$sql .= ";";
+		$types = numType(count($musician_ids), "ii");
+		$params = featherIn($song_id, $musician_ids);
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = bindNumParams($stmt, $types, $params);
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -242,23 +159,11 @@
 	 * 		$year_written: year the song was written
 	 */
 	function insert_song_version($mysqli, $song_id, $album_id, $name, $lyrics) {
-	
-		if(!($stmt = $mysqli->prepare("INSERT INTO song_version (song_id, album_id, name, lyrics) VALUES (?, ?, ?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }
-          
-          //Bind variables:
-          if(!($stmt->bind_param("iiss", $song_id, $album_id, $name, $lyrics))) {
-               echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }
-          
-          //Execute statement:
-          if(!($stmt->execute())) {
-               echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }
-          else {
-               echo "<p>Added " . $stmt->affected_rows . " row(s) to song_version.</p>";    
-          }
+		$sql="INSERT INTO song_version (song_id, album_id, name, lyrics)
+				VALUES (?, ?, ?, ?);";
+		$stmt = prepareStmt($mysqli, $sql);
+          $stmt = bindNumParams($stmt, "iiss", array($song_id, $album_id, $name, $lyrics));
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -271,25 +176,15 @@
 	 * 		$song_version_id: id of the song_version in question
 	 */
 	function insert_musician_song_version($mysqli, $musician_ids, $song_version_id) {
-		
-		if(!($stmt = $mysqli->prepare("INSERT INTO musician_song_version (musician_id, song_version_id) VALUES (?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }   
-		
-		$count=0;
-          foreach ($musician_ids as $musician_id) {
-			$count++;
-
-               //Bind variables:
-               if(!($stmt->bind_param("ii", $musician_id, $song_version_id))) {
-                    echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-
-               if(!($stmt->execute())) {
-                    echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-  		}
-		echo "<p>Added " . $count . " row(s) to musician_song_verion.</p>";    
+		$sql="INSERT INTO musician_song_version (song_version_id, musician_id)
+				VALUES (?, ?)";
+		$sql .= numSqlLines((count($musician_ids)-1), ", (?, ?)";
+		$sql .= ";";
+		$types = numType(count($musician_ids), "ii");
+		$params = featherIn($song_version_id, $musician_ids);
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = bindNumParams($stmt, $types, $params);
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -302,25 +197,15 @@
 	 * 		$influence_ids: array of ids for musicians who influenced the given musician
 	 */
 	function insert_musician_influence($mysqli, $musician_id, $influence_ids) {
-		
-		if(!($stmt = $mysqli->prepare("INSERT INTO musician_influence (musician_id, influence_id) VALUES (?, ?);"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }   
-		
-		$count=0;
-          foreach ($influence_ids as $influence_id) {
-			$count++;
-
-               //Bind variables:
-               if(!($stmt->bind_param("ii", $musician_id, $influence_id))) {
-                    echo "<p>Bind failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-
-               if(!($stmt->execute())) {
-                    echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-               }   
-  		}
-		echo "<p>Added " . $count . " row(s) to musician_influence.</p>";    
+		$sql="INSERT INTO musician_influence (musician_id, influence_id)
+				VALUES (?, ?)";
+		$sql .= numSqlLines((count($influence_ids)-1), ", (?, ?)");
+		$sql .= ";";
+		$types = numType(count($influence_ids), "ii");
+		$params = featherIn($musician_ids, $influence_ids);
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = bindNumParams($stmt, $types, $params);
+		$stmt = executeStmt($stmt);
 		$stmt->close();
 	}
 
@@ -332,18 +217,14 @@
       *        $table: name of the table from which to get the max id
       */
      function getMaxID($mysqli, $table) {
-
-          if(!($stmt = $mysqli->prepare("SELECT MAX(id) FROM " . $table . " ;"))) {
-               echo "<p>Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error . "</p>";
-          }   
-
-          if(!($stmt->execute())) {
-               echo "<p>Execute failed: (" . $stmt->errno . ") " . $stmt->error . "</p>";
-          }   
+		$sql="SELECT MAX(id) FROM " . $table . " ;";
+		$stmt = prepareStmt($mysqli, $sql);
+		$stmt = executeStmt($stmt);
 
           if(!$stmt->bind_result($max_id)) {
                echo "<p>Bind failed: (" . $stmt->connect_errno . ") " . $stmt->connect_error . "</p>";
-          }   
+          }
+ 
           $stmt->fetch();
           $stmt->close();
 
